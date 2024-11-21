@@ -18,26 +18,16 @@ dependencies:
   cupertino_icons: ^1.0.8
   sqflite: ^2.0.0+4
   path: ^1.8.0
-<<<<<<< HEAD
   path_provider: ^2.0.11
-=======
->>>>>>> e9b7c24e6d8f37fef9e4d727a83534cc90ea98f2
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
 
   flutter_lints: ^4.0.0
-
+  
 flutter:
   uses-material-design: true
-
   assets:
-    - assets/logo.png
     - assets/background_login.png
-<<<<<<< HEAD
-    - assets/db.sqlite
-=======
-
->>>>>>> e9b7c24e6d8f37fef9e4d727a83534cc90ea98f2
-
+    - assets/logo.png
