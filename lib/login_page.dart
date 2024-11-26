@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http; // Import pour les requêtes HTTP
+import 'dart:convert'; // Pour décoder les réponses JSON
+import 'home_page.dart';
 import 'sign_up_page.dart';
 import 'password_recovery_page.dart';
-import 'database_helper.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -11,12 +13,11 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>(); // Définition de la clé du formulaire
   String _errorMessage = '';
   String _successMessage = '';
 
-  // Fonction de connexion en utilisant DatabaseHelper
-  void _login() async {
+  Future<void> _login() async {
     setState(() {
       _errorMessage = '';
       _successMessage = '';
@@ -24,57 +25,50 @@ class _LoginPageState extends State<LoginPage> {
 
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
       setState(() {
-        _errorMessage = 'Les champs ne doivent pas être vides';
+        _errorMessage = 'Les champs ne doivent pas être vides.';
       });
       return;
     }
 
-    final dbHelper = DatabaseHelper();
-    final user = await dbHelper.loginUser(_emailController.text, _passwordController.text);
+    var body = {
+      'action': 'login',
+      'email': _emailController.text,
+      'password': _passwordController.text,
+    };
 
-    if (user != null) {
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/MY_API/users.php'),
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        if (data['status'] == 'success') {
+          setState(() {
+            _successMessage = 'Connexion réussie !';
+          });
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => HomePage()),
+          );
+        } else {
+          setState(() {
+            _errorMessage = data['message'];
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Erreur serveur (${response.statusCode}), réessayez plus tard.';
+        });
+      }
+    } catch (e) {
       setState(() {
-        _successMessage = 'Connexion réussie !';
-        _errorMessage = '';
-      });
-    } else {
-      setState(() {
-        _errorMessage = 'Échec de la connexion. Vérifiez vos informations.';
-        _successMessage = '';
+        _errorMessage = 'Une erreur est survenue : $e';
       });
     }
-  }
-
-  // Fonction pour afficher tous les utilisateurs
-  void _showAllUsers() async {
-    final dbHelper = DatabaseHelper();
-    final users = await dbHelper.getAllUsers();
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          title: Text("Tous les utilisateurs"),
-          content: users.isNotEmpty
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: users.map((user) {
-                    return ListTile(
-                      title: Text(user['firstName'] + " " + user['lastName']),
-                      subtitle: Text(user['email']),
-                    );
-                  }).toList(),
-                )
-              : Text("Aucun utilisateur trouvé."),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Fermer"),
-            ),
-          ],
-        );
-      },
-    );
   }
 
   @override
@@ -83,7 +77,6 @@ class _LoginPageState extends State<LoginPage> {
       body: SafeArea(
         child: Stack(
           children: [
-            // Arrière-plan avec image assombrie
             ColorFiltered(
               colorFilter: ColorFilter.mode(
                 Colors.black.withOpacity(0.6),
@@ -98,14 +91,12 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ),
             ),
-            // Contenu de la page de connexion
             SingleChildScrollView(
               child: Form(
-                key: _formKey,
+                key: _formKey, // Correction ici
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    // Logo en haut
                     Padding(
                       padding: EdgeInsets.only(top: 50),
                       child: Center(
@@ -177,7 +168,7 @@ class _LoginPageState extends State<LoginPage> {
                           SizedBox(height: 20),
                           Center(
                             child: SizedBox(
-                              width: 150, // Largeur plus petite pour le bouton "Login"
+                              width: 150,
                               child: ElevatedButton(
                                 onPressed: _login,
                                 style: ElevatedButton.styleFrom(
@@ -211,14 +202,6 @@ class _LoginPageState extends State<LoginPage> {
                                 style: TextStyle(color: Colors.blue[900], fontSize: 16, fontWeight: FontWeight.bold),
                                 textAlign: TextAlign.center,
                               ),
-                            ),
-                          ),
-                          SizedBox(height: 10),
-                          TextButton(
-                            onPressed: _showAllUsers,
-                            child: Text(
-                              "Afficher tous les utilisateurs",
-                              style: TextStyle(color: Colors.blue, fontSize: 14),
                             ),
                           ),
                           SizedBox(height: 20),

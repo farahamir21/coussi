@@ -1,14 +1,70 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'password_change.dart'; // Importez la page de changement de mot de passe
 
 class PasswordRecoveryPage extends StatelessWidget {
   final TextEditingController _emailController = TextEditingController();
 
+  Future<void> sendEmail(BuildContext context) async {
+    final email = _emailController.text.trim();
+
+    if (email.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Veuillez entrer votre adresse email."),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    final url = Uri.parse('http://10.0.2.2/MY_API/send_verification_code.php'); // URL de votre backend
+    try {
+      final response = await http.post(
+        url,
+        body: {'email': email},
+      );
+
+      final responseData = json.decode(response.body);
+
+      if (responseData['status'] == 'success') {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message']),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Naviguer vers la page pour entrer le code
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => PasswordChangePage()),
+        );
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(responseData['message']),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Erreur lors de la connexion au serveur."),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[200], // Même couleur de fond que la page de création de compte
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: Text(""),
+        title: Text("Récupération du mot de passe"),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: Colors.orange),
@@ -20,7 +76,6 @@ class PasswordRecoveryPage extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Titre de la page
               Text(
                 "Récupération du mot de passe",
                 textAlign: TextAlign.center,
@@ -31,55 +86,34 @@ class PasswordRecoveryPage extends StatelessWidget {
                 ),
               ),
               SizedBox(height: 30),
-
-              // Texte d'instruction
               Text(
                 "Entrez votre adresse email pour récupérer votre mot de passe",
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 16, color: Colors.grey[800]),
               ),
               SizedBox(height: 20),
-
-              // Champ de texte Email avec le même style que dans la page de création de compte
               TextField(
                 controller: _emailController,
                 decoration: InputDecoration(
                   labelText: "Email",
-                  labelStyle: TextStyle(color: Colors.grey[800]),
-                  filled: true,
-                  fillColor: Colors.white,
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange, width: 2.0),
                   ),
                 ),
               ),
               SizedBox(height: 30),
-
-              // Bouton Envoyer avec le même style que le bouton "Sign up"
               ElevatedButton(
-                onPressed: () {
-                  // Logique de récupération du mot de passe ici
-                },
+                onPressed: () => sendEmail(context),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: Colors.orange,
                   padding: EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Colors.orange),
                   ),
                 ),
                 child: Text(
                   "Envoyer",
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                 ),
               ),
             ],

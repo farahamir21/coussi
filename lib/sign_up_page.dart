@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'database_helper.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -30,7 +31,6 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    // Vérification du format de l'email
     final emailPattern = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
     if (!emailPattern.hasMatch(_emailController.text)) {
       setState(() {
@@ -39,7 +39,6 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    // Vérification de la longueur du mot de passe
     if (_passwordController.text.length < 6) {
       setState(() {
         _errorMessage = 'Le mot de passe doit contenir au moins 6 caractères';
@@ -54,22 +53,32 @@ class _SignUpPageState extends State<SignUpPage> {
       return;
     }
 
-    final dbHelper = DatabaseHelper();
-    int result = await dbHelper.registerUser(
-      _usernameController.text,
-      '', // Remplacez par le prénom si nécessaire
-      _emailController.text,
-      _passwordController.text,
-    );
+    try {
+      final response = await http.post(
+        Uri.parse('http://10.0.2.2/MY_API/users.php'),
+        body: {
+          'action': 'register',
+          'username': _usernameController.text,
+          'email': _emailController.text,
+          'password': _passwordController.text,
+        },
+      );
 
-    if (result != -1) {
+      final responseData = json.decode(response.body);
+      if (response.statusCode == 200 && responseData['status'] == 'success') {
+        setState(() {
+          _successMessage = responseData['message'];
+          _errorMessage = '';
+        });
+      } else {
+        setState(() {
+          _errorMessage = responseData['message'] ?? 'Erreur lors de l\'inscription';
+          _successMessage = '';
+        });
+      }
+    } catch (e) {
       setState(() {
-        _successMessage = 'Compte créé avec succès !';
-        _errorMessage = '';
-      });
-    } else {
-      setState(() {
-        _errorMessage = 'Échec de la création de compte. Email déjà utilisé.';
+        _errorMessage = 'Erreur lors de la connexion au serveur: $e';
         _successMessage = '';
       });
     }
@@ -88,136 +97,82 @@ class _SignUpPageState extends State<SignUpPage> {
       body: Center(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                "Créer un compte",
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.orange,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 30),
-
-              TextField(
-                controller: _usernameController,
-                decoration: InputDecoration(
-                  labelText: "Username",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange, width: 2.0),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-
-              TextField(
-                controller: _emailController,
-                decoration: InputDecoration(
-                  labelText: "Email",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange, width: 2.0),
-                  ),
-                ),
-              ),
-              SizedBox(height: 16),
-
-              TextField(
-                controller: _passwordController,
-                decoration: InputDecoration(
-                  labelText: "Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange, width: 2.0),
-                  ),
-                ),
-                obscureText: true,
-              ),
-              SizedBox(height: 16),
-
-              TextField(
-                controller: _confirmPasswordController,
-                decoration: InputDecoration(
-                  labelText: "Confirm Password",
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    borderSide: BorderSide(color: Colors.orange, width: 2.0),
-                  ),
-                ),
-                obscureText: true,
-              ),
-              SizedBox(height: 16),
-
-              // Afficher le message d'erreur ou de succès
-              if (_errorMessage.isNotEmpty)
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
                 Text(
-                  _errorMessage,
-                  style: TextStyle(color: Colors.red, fontSize: 14),
+                  "Créer un compte",
                   textAlign: TextAlign.center,
-                ),
-              if (_successMessage.isNotEmpty)
-                Text(
-                  _successMessage,
-                  style: TextStyle(color: Colors.green, fontSize: 14),
-                  textAlign: TextAlign.center,
-                ),
-              SizedBox(height: 20),
-
-              ElevatedButton(
-                onPressed: _register,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10.0),
-                    side: BorderSide(color: Colors.orange),
+                  style: TextStyle(
+                    color: Colors.orange,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-                child: Text(
-                  "Sign up",
-                  style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                SizedBox(height: 30),
+                buildTextField("Username", _usernameController),
+                buildTextField("Email", _emailController),
+                buildTextField("Password", _passwordController, obscureText: true),
+                buildTextField("Confirm Password", _confirmPasswordController, obscureText: true),
+                if (_errorMessage.isNotEmpty)
+                  Text(
+                    _errorMessage,
+                    style: TextStyle(color: Colors.red, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                if (_successMessage.isNotEmpty)
+                  Text(
+                    _successMessage,
+                    style: TextStyle(color: Colors.green, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: _register,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10.0),
+                      side: BorderSide(color: Colors.orange),
+                    ),
+                  ),
+                  child: Text(
+                    "Sign up",
+                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget buildTextField(String label, TextEditingController controller, {bool obscureText = false}) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16),
+      child: TextField(
+        controller: controller,
+        decoration: InputDecoration(
+          labelText: label,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.orange),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.orange),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10.0),
+            borderSide: BorderSide(color: Colors.orange, width: 2.0),
+          ),
+        ),
+        obscureText: obscureText,
       ),
     );
   }

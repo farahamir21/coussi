@@ -12,6 +12,8 @@ class BusSchedulePage extends StatelessWidget {
     {"time": "6:30 AM", "route": "Ben Aknoun - Tafoura"},
     {"time": "7:00 AM", "route": "Ben Aknoun - Tafoura"},
     {"time": "7:30 AM", "route": "Ben Aknoun - Tafoura"},
+    {"time": "8:00 AM", "route": "Ben Aknoun - Tafoura"},
+    {"time": "8:30 AM", "route": "Ben Aknoun - Tafoura"}
   ];
 
   @override
